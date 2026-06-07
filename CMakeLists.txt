@@ -29,6 +29,7 @@ target_include_directories(object_detector PRIVATE ${INCLUDES})
 add_executable(pipeline
     src/main.cpp
     src/camera_capture.cpp
+    src/inference_engine.cpp
 )
-target_link_libraries(pipeline PRIVATE ${OpenCV_LIBS} Threads::Threads)
+target_link_libraries(pipeline PRIVATE ${OpenCV_LIBS} hailort Threads::Threads)
 target_include_directories(pipeline PRIVATE ${INCLUDES})
