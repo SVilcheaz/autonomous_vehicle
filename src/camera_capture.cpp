@@ -1,5 +1,6 @@
 #include "camera_capture.hpp"
 #include <cstdio>
+#include <unistd.h>
 
 CameraCapture::CameraCapture(int width, int height, SafeQueue<cv::Mat>& frame_queue)
     : width_(width), height_(height), frame_queue_(frame_queue) {}
@@ -37,7 +38,7 @@ void CameraCapture::capture_loop() {
         running_ = false;
         return;
     }
-
+    sleep(1);
     fprintf(stdout, "[T1] Camera capture started (%dx%d)\n", width_, height_);
 
     while (running_) {

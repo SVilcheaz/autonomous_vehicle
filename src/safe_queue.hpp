@@ -6,9 +6,6 @@
 #include <chrono>
 #include <cstddef>
 
-// Ring buffer with blocking pop.
-// push() always succeeds: if the buffer is full it evicts the oldest entry
-// so the consumer always sees the most recent data, never stale frames.
 template<typename T>
 class SafeQueue {
 public:
@@ -24,8 +21,6 @@ public:
         cv_.notify_one();
     }
 
-    // Block until an item is available or timeout_ms elapses.
-    // Returns false on timeout.
     bool pop(T& val, int timeout_ms) {
         std::unique_lock<std::mutex> lock(mtx_);
         bool available = cv_.wait_for(lock,
