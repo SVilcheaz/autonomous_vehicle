@@ -1,7 +1,6 @@
 .vscode
 build
 results
-models
 *.jpeg
 *.log
 *.sh
