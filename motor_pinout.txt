@@ -1,0 +1,21 @@
+Right Motor Driver:
+	Top right motor
+		ENB -> GPIO 18/PIN 12		| PWM
+		IN4 -> GPIO 27/PIN 13
+		IN3 -> GPIO 22/PIN 15
+
+	Bottom right motor
+		ENA -> GPIO 12/PIN 32		| PWM
+		IN2 -> GPIO 23/PIN 16
+		IN1 -> GPIO 24/PIN 18
+
+Left Motor Driver:
+	Top left motor
+		ENA -> GPIO 19/PIN 33		| PWM
+		IN1 -> GPIO 6/PIN 31
+		IN2 -> GPIO 5/PIN 29
+
+	Bottom left motor
+		ENB -> GPIO 13/PIN 35		| PWM
+		IN3 -> GPIO 20/PIN 38
+		IN4 -> GPIO 16/PIN 36
