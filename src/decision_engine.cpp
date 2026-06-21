@@ -36,24 +36,34 @@ void DecisionEngine::pipe_reader_loop() {
     }
 
     fprintf(stdout, "[T3] Waiting for wake-word writer on %s...\n", pipe_path_.c_str());
-    int fd = open(pipe_path_.c_str(), O_RDONLY);
-    if (fd < 0) {
+
+    int fd = -1;
+    auto open_pipe = [&]() -> bool {
+        if (fd >= 0) close(fd);
+        fd = open(pipe_path_.c_str(), O_RDONLY | O_NONBLOCK);
+        return fd >= 0;
+    };
+
+    if (!open_pipe()) {
         fprintf(stderr, "[T3] Failed to open FIFO: %s\n", strerror(errno));
         return;
     }
-    fprintf(stdout, "[T3] Wake-word pipe connected\n");
+    fprintf(stdout, "[T3] Wake-word pipe ready\n");
 
     char buf[256];
     std::string leftover;
 
     while (running_) {
+        struct pollfd pfd = { fd, POLLIN, 0 };
+        int ret = poll(&pfd, 1, 200);
+        if (ret <= 0) continue;
+
         ssize_t n = read(fd, buf, sizeof(buf) - 1);
         if (n <= 0) {
             if (n == 0) {
                 fprintf(stdout, "[T3] Pipe writer disconnected, reopening...\n");
-                close(fd);
-                fd = open(pipe_path_.c_str(), O_RDONLY);
-                if (fd < 0) break;
+                if (!open_pipe()) break;
+                leftover.clear();
                 fprintf(stdout, "[T3] Wake-word pipe reconnected\n");
             }
             continue;
@@ -68,10 +78,10 @@ void DecisionEngine::pipe_reader_loop() {
             leftover.erase(0, pos + 1);
 
             DriveMode new_mode = DriveMode::IDLE;
-            if      (keyword == "follow_me")  new_mode = DriveMode::FOLLOW;
-            else if (keyword == "autopilot")  new_mode = DriveMode::AUTOPILOT;
+            if      (keyword == "follow_me")   new_mode = DriveMode::FOLLOW;
+            else if (keyword == "autopilot")   new_mode = DriveMode::AUTOPILOT;
             else if (keyword == "three_sixty") new_mode = DriveMode::SPIN_360;
-            else if (keyword == "full_stop")  new_mode = DriveMode::STOP;
+            else if (keyword == "full_stop")   new_mode = DriveMode::STOP;
 
             mode_.store(new_mode);
             fprintf(stdout, "[T3] Wake word: '%s' -> mode %d\n",
@@ -79,7 +89,7 @@ void DecisionEngine::pipe_reader_loop() {
         }
     }
 
-    close(fd);
+    if (fd >= 0) close(fd);
     fprintf(stdout, "[T3] Pipe reader stopped\n");
 }
 
