@@ -12,7 +12,7 @@
 #include <hailo/infer_model.hpp>
 
 // ── config ────────────────────────────────────────────────────────────────────
-static const std::string HEF_PATH   = "models/yolov8s_h8l.hef";
+static const std::string HEF_PATH   = "models/hailo/yolov8s_h8l.hef";
 static const float CONF_THRESHOLD   = 0.4f;
 static const float NMS_IOU_THRESHOLD = 0.45f;
 static const int   INPUT_SIZE       = 640;

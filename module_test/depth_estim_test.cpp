@@ -11,7 +11,7 @@
 #include <hailo/vdevice.hpp>
 #include <hailo/infer_model.hpp>
 
-static const std::string HEF_PATH = "models/fastdepth--224x224.hef";
+static const std::string HEF_PATH = "models/hailo/fastdepth--224x224.hef";
 //static const std::string HEF_PATH = "depth_anything/depth_anything_v2--224x224.hef";
 static const float CONF_THRESHOLD    = 0.4f;
 static const float NMS_IOU_THRESHOLD = 0.45f;

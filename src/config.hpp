@@ -12,7 +12,7 @@ struct PipelineConfig {
     size_t frame_queue_size       = 2;      // ring buffer slots between T1 and T2
 
     // ── Inference (T2) ────────────────────────────────────────────────────────
-    std::string yolo_hef          = "models/yolov8s_h8l.hef";
+    std::string yolo_hef          = "models/hailo/yolov8s_h8l.hef";
     DepthModel  depth_model       = DepthModel::FASTDEPTH;
     int         yolo_input_size   = 640;    // YOLO letterbox target (pixels)
     float       conf_threshold    = 0.4f;
@@ -22,8 +22,8 @@ struct PipelineConfig {
 
     const char* depth_hef() const {
         return depth_model == DepthModel::FASTDEPTH
-            ? "models/fastdepth--224x224.hef"
-            : "models/depth_anything_v2--224x224.hef";
+            ? "models/hailo/fastdepth--224x224.hef"
+            : "models/hailo/depth_anything_v2--224x224.hef";
     }
 
     // ── Decision (T3) ────────────────────────────────────────────────────────
