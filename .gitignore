@@ -1,6 +1,6 @@
 .vscode
 build
 results
-*.jpeg
 *.log
 *.sh
+venv

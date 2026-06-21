@@ -102,7 +102,7 @@ std::vector<Detection> decode_nms(
 
 // ── main ──────────────────────────────────────────────────────────────────────
 int main(int argc, char* argv[]) {
-    std::string image_path = (argc > 1) ? argv[1] : "test_image.jpeg";
+    std::string image_path = (argc > 1) ? argv[1] : "module_test/test_image.jpeg";
 
     // ── 1. Load & letterbox image ─────────────────────────────────────────────
     cv::Mat orig = cv::imread(image_path);
@@ -196,7 +196,7 @@ int main(int argc, char* argv[]) {
                     cv::FONT_HERSHEY_SIMPLEX, 0.6, {0, 255, 0}, 2);
     }
     namespace fs = std::filesystem;
-    fs::path dir = "results";
+    fs::path dir = "results/yolo_infer_test";
 
     // create folder if it doesn't exist
     if (!fs::exists(dir))

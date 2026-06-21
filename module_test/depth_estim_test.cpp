@@ -5,6 +5,7 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <algorithm>
+#include <filesystem>
 
 #include <hailo/hailort.h>
 #include <hailo/hailort_common.hpp>
@@ -17,7 +18,7 @@ static const float CONF_THRESHOLD    = 0.4f;
 static const float NMS_IOU_THRESHOLD = 0.45f;
 
 int main(int argc, char* argv[]) {
-    std::string image_path = (argc > 1) ? argv[1] : "test_image.jpeg";
+    std::string image_path = (argc > 1) ? argv[1] : "module_test/test_image.jpeg";
 
     const cv::Mat orig = cv::imread(image_path);
     if (orig.empty()) {
@@ -137,13 +138,16 @@ int main(int argc, char* argv[]) {
     cv::resize(depth_color, depth_display, cv::Size(orig.cols, orig.rows));
 
     // ── 12. Save output ─────────────────────────────────────────────────────
-    cv::imwrite("depth_output.png", depth_display);
+    namespace fs = std::filesystem;
+    const fs::path out_dir = "results/depth_test";
+    fs::create_directories(out_dir);
+    cv::imwrite((out_dir /"depth_output.png").string(), depth_display);
     printf("Saved depth_output.png\n");
 
     // Optional: side-by-side comparison
     cv::Mat comparison;
     cv::hconcat(orig, depth_display, comparison);
-    cv::imwrite("comparison.png", comparison);
+    cv::imwrite((out_dir /"comparison.png").string(), comparison);
     printf("Saved comparison.png\n");
 
     return 0;
