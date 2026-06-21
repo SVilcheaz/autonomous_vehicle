@@ -57,7 +57,7 @@ def audio_callback(indata, frames, time_info, status):
             last_sent[keyword] = now
             ts = datetime.now().strftime("%H:%M:%S")
             bar = "█" * int(score * 20)
-            print(f"[{ts}] '{keyword}' detected! {bar} ({score:.2f})")
+            print(f"[OWW] [{ts}] '{keyword}' detected! {bar} ({score:.2f})")
             os.write(pipe_fd, f"{keyword}\n".encode())
 
 try:
