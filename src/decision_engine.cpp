@@ -77,15 +77,19 @@ void DecisionEngine::pipe_reader_loop() {
             std::string keyword = leftover.substr(0, pos);
             leftover.erase(0, pos + 1);
 
-            DriveMode new_mode = DriveMode::IDLE;
-            if      (keyword == "follow_me")   new_mode = DriveMode::FOLLOW;
-            else if (keyword == "autopilot")   new_mode = DriveMode::AUTOPILOT;
-            else if (keyword == "three_sixty") new_mode = DriveMode::SPIN_360;
-            else if (keyword == "full_stop")   new_mode = DriveMode::STOP;
-
-            mode_.store(new_mode);
-            fprintf(stdout, "[T3] Wake word: '%s' -> mode %d\n",
-                    keyword.c_str(), (int)new_mode);
+            if (keyword == "follow_me") {
+                mode_.store(DriveMode::FOLLOW);
+                fprintf(stdout, "[T3] Wake word: '%s' -> mode FOLLOW\n", keyword.c_str());
+            } else if (keyword == "autopilot") {
+                mode_.store(DriveMode::AUTOPILOT);
+                fprintf(stdout, "[T3] Wake word: '%s' -> mode AUTOPILOT\n", keyword.c_str());
+            } else if (keyword == "full_stop") {
+                mode_.store(DriveMode::STOP);
+                fprintf(stdout, "[T3] Wake word: '%s' -> mode STOP\n", keyword.c_str());
+            } else if (keyword == "three_sixty") {
+                action_queue_.push(Action::SPIN_360);
+                fprintf(stdout, "[T3] Wake word: '%s' -> action SPIN_360\n", keyword.c_str());
+            }
         }
     }
 
@@ -95,6 +99,11 @@ void DecisionEngine::pipe_reader_loop() {
 
 void DecisionEngine::decision_loop() {
     while (running_) {
+        Action action;
+        while (action_queue_.pop(action, 0)) {
+            execute_action(action);
+        }
+
         PerceptionResult result;
         if (!perception_queue_.pop(result, 200)) continue;
 
@@ -106,4 +115,15 @@ void DecisionEngine::decision_loop() {
     }
 
     fprintf(stdout, "[T3] Decision engine stopped\n");
+}
+
+void DecisionEngine::execute_action(Action action) {
+    fprintf(stdout, "[T3] Executing action %d\n", (int)action);
+
+    switch (action) {
+    case Action::SPIN_360:
+        fprintf(stdout, "[T3] Spinning 360: %d\n", (int)action);
+        // TODO: send spin command to T4, wait for completion
+        break;
+    }
 }

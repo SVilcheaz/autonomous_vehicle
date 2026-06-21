@@ -8,7 +8,9 @@
 #include "safe_queue.hpp"
 #include "perception_result.hpp"
 
-enum class DriveMode { IDLE, FOLLOW, AUTOPILOT, SPIN_360, STOP };
+enum class DriveMode { IDLE, FOLLOW, AUTOPILOT, STOP };
+
+enum class Action { SPIN_360 };
 
 class DecisionEngine {
 public:
@@ -25,6 +27,7 @@ public:
 private:
     void pipe_reader_loop();
     void decision_loop();
+    void execute_action(Action action);
 
     const PipelineConfig&        cfg_;
     SafeQueue<PerceptionResult>& perception_queue_;
@@ -32,6 +35,7 @@ private:
 
     std::atomic<bool>      running_{false};
     std::atomic<DriveMode> mode_{DriveMode::IDLE};
+    SafeQueue<Action>      action_queue_{4};
 
     std::thread pipe_thread_;
     std::thread decision_thread_;
