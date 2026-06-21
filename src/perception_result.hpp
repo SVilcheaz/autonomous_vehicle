@@ -14,6 +14,7 @@ struct Detection {
 struct PerceptionResult {
     std::vector<Detection> detections;
     cv::Mat                depth_map;  // CV_32FC1, model output resolution
+    cv::Mat                frame;      // original BGR camera frame
     int                    frame_w;
     int                    frame_h;
 };

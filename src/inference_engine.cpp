@@ -204,6 +204,7 @@ void InferenceEngine::inference_loop() {
         PerceptionResult result;
         result.detections = std::move(detections);
         result.depth_map  = depth_map.clone();
+        result.frame      = frame;
         result.frame_w    = frame.cols;
         result.frame_h    = frame.rows;
 

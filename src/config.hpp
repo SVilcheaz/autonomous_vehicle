@@ -13,7 +13,7 @@ struct PipelineConfig {
 
     // ── Inference (T2) ────────────────────────────────────────────────────────
     std::string yolo_hef          = "models/hailo/yolov8s_h8l.hef";
-    DepthModel  depth_model       = DepthModel::FASTDEPTH;
+    DepthModel  depth_model       = DepthModel::DEPTH_ANYTHING;
     int         yolo_input_size   = 640;    // YOLO letterbox target (pixels)
     float       conf_threshold    = 0.4f;
     float       nms_iou_threshold = 0.45f;

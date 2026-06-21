@@ -47,6 +47,7 @@ void CameraCapture::capture_loop() {
             fprintf(stderr, "[T1] Failed to grab frame — retrying\n");
             continue;
         }
+        cv::rotate(frame, frame, cv::ROTATE_180);
         // push() drops the oldest frame internally if the queue is full,
         // so T2 always sees the freshest image.
         frame_queue_.push(std::move(frame));
