@@ -21,6 +21,10 @@ add_executable(depth_infer module_test/depth_estim_test.cpp)
 target_link_libraries(depth_infer PRIVATE ${LIBS})
 target_include_directories(depth_infer PRIVATE ${INCLUDES})
 
+add_executable(camera_test module_test/camera_capture_test.cpp src/camera_capture.cpp)
+target_link_libraries(camera_test PRIVATE ${OpenCV_LIBS} Threads::Threads)
+target_include_directories(camera_test PRIVATE ${INCLUDES})
+
 add_executable(object_detector module_test/yolo_infer_test.cpp)
 target_link_libraries(object_detector PRIVATE ${LIBS})
 target_include_directories(object_detector PRIVATE ${INCLUDES})
