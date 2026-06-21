@@ -7,6 +7,7 @@
 #include "safe_queue.hpp"
 #include "camera_capture.hpp"
 #include "inference_engine.hpp"
+#include "decision_engine.hpp"
 #include "perception_result.hpp"
 
 static std::atomic<bool> g_running{true};
@@ -32,29 +33,21 @@ int main() {
         return 1;
     }
 
+    // T3
+    DecisionEngine decision(cfg, perception_queue);
+
     camera.start();
     engine.start();
+    decision.start();
 
-    int frame_count = 0;
     while (g_running) {
-        PerceptionResult result;
-        if (!perception_queue.pop(result, 200)) continue;
-
-        ++frame_count;
-        fprintf(stdout, "[Main] Frame %d — %zu detection(s)\n",
-                frame_count, result.detections.size());
-        for (const auto& det : result.detections) {
-            fprintf(stdout, "  %-20s  conf=%.2f  depth=%.3f  box=[%d,%d,%d,%d]\n",
-                    det.label.c_str(), det.score, det.depth,
-                    det.x1, det.y1, det.x2, det.y2);
-        }
-
-        // T3 will pop from perception_queue here — stub for now
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
+    decision.stop();
     engine.stop();
     camera.stop();
 
-    fprintf(stdout, "[Main] Done. Processed %d frames.\n", frame_count);
+    fprintf(stdout, "[Main] Done.\n");
     return 0;
 }
