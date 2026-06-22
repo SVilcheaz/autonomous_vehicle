@@ -12,20 +12,22 @@
 #include "inference_engine.hpp"
 #include "perception_result.hpp"
 
-static constexpr int    MAX_FRAMES      = 100;
+static constexpr int    MAX_FRAMES      = 10;
 static constexpr double MAX_SECONDS     = 10.0;
 static constexpr float  DEPTH_BLEND     = 0.4f;
 
 static std::atomic<bool> g_running{true};
 static void on_signal(int) { g_running = false; }
 
-static cv::Mat render(const PerceptionResult& result) {
+static std::pair<cv::Mat, cv::Mat> render(const PerceptionResult& result) {
     cv::Mat canvas = result.frame.clone();
+    cv::Mat depth_resized;
 
     if (!result.depth_map.empty()) {
         cv::Mat depth_norm;
         cv::normalize(result.depth_map, depth_norm, 0, 255, cv::NORM_MINMAX, CV_8UC1);
-        cv::Mat depth_color, depth_resized;
+        //std::cout << "Depth map normalized to 0-255 range" << depth_norm<< std::endl;
+        cv::Mat depth_color;
         cv::applyColorMap(depth_norm, depth_color, cv::COLORMAP_MAGMA);
         cv::resize(depth_color, depth_resized, canvas.size());
         cv::addWeighted(canvas, 1.0f - DEPTH_BLEND, depth_resized, DEPTH_BLEND, 0, canvas);
@@ -51,9 +53,9 @@ static cv::Mat render(const PerceptionResult& result) {
                     cv::FONT_HERSHEY_SIMPLEX, 0.5, {0, 0, 0}, 1);
     }
 
-    return canvas;
+    return {canvas, depth_resized};
 }
-
+    
 int main() {
     std::signal(SIGINT,  on_signal);
     std::signal(SIGTERM, on_signal);
@@ -96,7 +98,7 @@ int main() {
         secs = std::chrono::duration<double>(
             std::chrono::steady_clock::now() - t_start).count();
 
-        cv::Mat canvas = render(result);
+        auto [canvas, depth_map] = render(result);
 
         char info[64];
         snprintf(info, sizeof(info), "Frame %d  t=%.1fs  dets=%zu",
@@ -108,6 +110,11 @@ int main() {
         snprintf(path, sizeof(path), "%s/frame_%04d.png",
                  out_dir.c_str(), frame_count);
         cv::imwrite(path, canvas);
+
+        char depth_path[256];
+        snprintf(depth_path, sizeof(depth_path), "%s/depth_%04d.png",
+                 out_dir.c_str(), frame_count);
+        cv::imwrite(depth_path, depth_map);
 
         fprintf(stdout, "[Test] Frame %d — %zu det(s), t=%.1fs\n",
                 frame_count, result.detections.size(), secs);
