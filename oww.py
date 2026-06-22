@@ -16,6 +16,8 @@ MODEL_PATHS = [
     "models/onnx/three_sixty.onnx",
     "models/onnx/autopilot.onnx",
     "models/onnx/full_stop.onnx",
+    "models/onnx/stop_engine.onnx",
+    "models/onnx/turn_around.onnx",
 ]
 
 THRESHOLD = 0.1

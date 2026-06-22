@@ -1,5 +1,6 @@
 #include "decision_engine.hpp"
 
+#include <csignal>
 #include <cstdio>
 #include <cstring>
 #include <fcntl.h>
@@ -82,17 +83,33 @@ void DecisionEngine::pipe_reader_loop() {
                 mode_.store(DriveMode::FOLLOW);
                 servo_.setAngle(cfg_.angle_follow_me_mode);
                 fprintf(stdout, "[T3] Wake word: '%s' -> mode FOLLOW\n", keyword.c_str());
-            } else if (keyword == "autopilot") {
+            } 
+            
+            else if (keyword == "autopilot") {
                 mode_.store(DriveMode::AUTOPILOT);
                 servo_.setAngle(cfg_.angle_autopilot_mode);
                 fprintf(stdout, "[T3] Wake word: '%s' -> mode AUTOPILOT\n", keyword.c_str());
-            } else if (keyword == "full_stop") {
-                mode_.store(DriveMode::STOP);
-                fprintf(stdout, "[T3] Wake word: '%s' -> mode STOP\n", keyword.c_str());
-            } else if (keyword == "three_sixty") {
+            } 
+
+            else if (keyword == "stop_engine") {
+                mode_.store(DriveMode::IDLE);
+                fprintf(stdout, "[T3] Wake word: '%s' -> mode IDLE\n", keyword.c_str());
+            } 
+            
+            else if (keyword == "three_sixty") {
                 action_queue_.push(Action::SPIN_360);
                 fprintf(stdout, "[T3] Wake word: '%s' -> action SPIN_360\n", keyword.c_str());
-            }
+            } 
+
+            else if (keyword == "turn_around") {
+                action_queue_.push(Action::TURN_180);
+                fprintf(stdout, "[T3] Wake word: '%s' -> action TURN_180\n", keyword.c_str());
+            } 
+            
+            else if (keyword == "full_stop") {
+                fprintf(stdout, "[T3] Wake word: '%s' -> shutting down\n", keyword.c_str());
+                raise(SIGINT);
+            } 
         }
     }
 
@@ -127,6 +144,10 @@ void DecisionEngine::execute_action(Action action) {
     case Action::SPIN_360:
         fprintf(stdout, "[T3] Spinning 360: %d\n", (int)action);
         // TODO: send spin command to T4, wait for completion
+        break;
+    case Action::TURN_180:
+        fprintf(stdout, "[T3] Turning 180: %d\n", (int)action);
+        // TODO: send turn command to T4, wait for completion
         break;
     }
 }
