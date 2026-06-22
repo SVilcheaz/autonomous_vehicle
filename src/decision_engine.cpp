@@ -10,7 +10,8 @@
 DecisionEngine::DecisionEngine(const PipelineConfig&       cfg,
                                SafeQueue<PerceptionResult>& perception_queue,
                                const std::string&           pipe_path)
-    : cfg_(cfg), perception_queue_(perception_queue), pipe_path_(pipe_path) {}
+    : cfg_(cfg), perception_queue_(perception_queue), pipe_path_(pipe_path),
+      servo_(cfg.servo_gpio_pin) {}
 
 DecisionEngine::~DecisionEngine() { stop(); }
 
@@ -79,9 +80,11 @@ void DecisionEngine::pipe_reader_loop() {
 
             if (keyword == "follow_me") {
                 mode_.store(DriveMode::FOLLOW);
+                servo_.setAngle(cfg_.angle_follow_me_mode);
                 fprintf(stdout, "[T3] Wake word: '%s' -> mode FOLLOW\n", keyword.c_str());
             } else if (keyword == "autopilot") {
                 mode_.store(DriveMode::AUTOPILOT);
+                servo_.setAngle(cfg_.angle_autopilot_mode);
                 fprintf(stdout, "[T3] Wake word: '%s' -> mode AUTOPILOT\n", keyword.c_str());
             } else if (keyword == "full_stop") {
                 mode_.store(DriveMode::STOP);

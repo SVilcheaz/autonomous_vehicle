@@ -37,12 +37,17 @@ add_executable(pipeline_visual_test
 target_link_libraries(pipeline_visual_test PRIVATE ${OpenCV_LIBS} hailort Threads::Threads)
 target_include_directories(pipeline_visual_test PRIVATE ${INCLUDES})
 
+add_executable(servo_test module_test/servo_test.cpp src/servo_controller.cpp)
+target_link_libraries(servo_test PRIVATE lgpio Threads::Threads)
+target_include_directories(servo_test PRIVATE ${INCLUDES})
+
 # Main inference pipeline (T1 → T2 → T3 → T4)
 add_executable(pipeline
     src/main.cpp
     src/camera_capture.cpp
     src/inference_engine.cpp
     src/decision_engine.cpp
+    src/servo_controller.cpp
 )
-target_link_libraries(pipeline PRIVATE ${OpenCV_LIBS} hailort Threads::Threads)
+target_link_libraries(pipeline PRIVATE ${OpenCV_LIBS} hailort lgpio Threads::Threads)
 target_include_directories(pipeline PRIVATE ${INCLUDES})

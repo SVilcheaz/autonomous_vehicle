@@ -7,6 +7,7 @@
 #include "config.hpp"
 #include "safe_queue.hpp"
 #include "perception_result.hpp"
+#include "servo_controller.hpp"
 
 enum class DriveMode { IDLE, FOLLOW, AUTOPILOT, STOP };
 
@@ -36,6 +37,8 @@ private:
     std::atomic<bool>      running_{false};
     std::atomic<DriveMode> mode_{DriveMode::IDLE};
     SafeQueue<Action>      action_queue_{4};
+
+    ServoController servo_;
 
     std::thread pipe_thread_;
     std::thread decision_thread_;

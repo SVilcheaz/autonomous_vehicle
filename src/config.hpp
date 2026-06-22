@@ -29,6 +29,9 @@ struct PipelineConfig {
     // ── Decision (T3) ────────────────────────────────────────────────────────
     float  obstacle_dist_m        = 1.0f;   // repulsion kicks in below this depth
     size_t command_queue_size     = 2;      // ring buffer slots between T3 and T4
+    int    servo_gpio_pin         = 25;     // camera tilt servo
+    double angle_follow_me_mode   = 0.0;   // degrees
+    double angle_autopilot_mode   = 70.0;    // degrees
 
     // ── Actuation (T4) ───────────────────────────────────────────────────────
     float  max_throttle           = 0.6f;   // normalised 0–1
