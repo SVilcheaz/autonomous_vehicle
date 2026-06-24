@@ -4,9 +4,9 @@
 #include <thread>
 #include <cstdint>
 
+#include "types.hpp"
 #include "config.hpp"
 #include "safe_queue.hpp"
-#include "decision_engine.hpp"
 
 class MotorController {
 public:
