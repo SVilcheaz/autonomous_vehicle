@@ -34,7 +34,26 @@ struct PipelineConfig {
     double angle_autopilot_mode   = 70.0;    // degrees
 
     // ── Actuation (T4) ───────────────────────────────────────────────────────
+    int    gpio_chip              = 4;
+
+    int    left_front_ena         = 19;
+    int    left_front_in1         = 6;
+    int    left_front_in2         = 5;
+    int    left_rear_enb          = 13;
+    int    left_rear_in3          = 20;
+    int    left_rear_in4          = 16;
+
+    int    right_front_ena        = 18;
+    int    right_front_in1        = 27;
+    int    right_front_in2        = 22;
+    int    right_rear_enb         = 12;
+    int    right_rear_in3         = 23;
+    int    right_rear_in4         = 24;
+
     float  max_throttle           = 0.6f;   // normalised 0–1
     float  max_steering           = 1.0f;   // normalised −1 to 1
     int    watchdog_timeout_ms    = 200;    // zero PWM if no command within this
+
+    int    spin_360_duration_ms   = 3000;
+    int    turn_180_duration_ms   = 1500;
 };

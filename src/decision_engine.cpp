@@ -1,8 +1,10 @@
 #include "decision_engine.hpp"
 
+#include <chrono>
 #include <csignal>
 #include <cstdio>
 #include <cstring>
+#include <thread>
 #include <fcntl.h>
 #include <unistd.h>
 #include <poll.h>
@@ -10,8 +12,10 @@
 
 DecisionEngine::DecisionEngine(const PipelineConfig&       cfg,
                                SafeQueue<PerceptionResult>& perception_queue,
+                               SafeQueue<DriveCommand>&     command_queue,
                                const std::string&           pipe_path)
-    : cfg_(cfg), perception_queue_(perception_queue), pipe_path_(pipe_path),
+    : cfg_(cfg), perception_queue_(perception_queue),
+      command_queue_(command_queue), pipe_path_(pipe_path),
       servo_(cfg.servo_gpio_pin) {}
 
 DecisionEngine::~DecisionEngine() { stop(); }
@@ -93,8 +97,9 @@ void DecisionEngine::pipe_reader_loop() {
 
             else if (keyword == "stop_engine") {
                 mode_.store(DriveMode::IDLE);
+                command_queue_.push(DriveCommand{0.0f, 0.0f});
                 fprintf(stdout, "[T3] Wake word: '%s' -> mode IDLE\n", keyword.c_str());
-            } 
+            }
             
             else if (keyword == "three_sixty") {
                 action_queue_.push(Action::SPIN_360);
@@ -124,30 +129,70 @@ void DecisionEngine::decision_loop() {
             execute_action(action);
         }
 
-        PerceptionResult result;
-        if (!perception_queue_.pop(result, 200)) continue;
-
         DriveMode m = mode_.load();
+        if (m == DriveMode::IDLE) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            continue;
+        }
+
+        PerceptionResult result;
+        if (!perception_queue_.pop(result, 200)) {
+            command_queue_.push(DriveCommand{0.0f, 0.0f});
+            continue;
+        }
+
         fprintf(stdout, "[T3] Frame (%zu detections), mode=%d\n",
                 result.detections.size(), (int)m);
 
-        // TODO: act on result + mode, push commands to T4
+        DriveCommand cmd{0.0f, 0.0f};
+
+        switch (m) {
+        case DriveMode::FOLLOW:
+            // TODO: compute throttle/steering from person tracking
+            // Vector field histogram for navigation on depth map
+            break;
+        case DriveMode::AUTOPILOT:
+            // TODO: compute throttle/steering from occupancy grid
+            // PD controller for steering
+            // PI controller for throttle
+            break;
+        default:
+            break;
+        }
+
+        command_queue_.push(cmd);
     }
 
+    command_queue_.push(DriveCommand{0.0f, 0.0f});
     fprintf(stdout, "[T3] Decision engine stopped\n");
 }
 
 void DecisionEngine::execute_action(Action action) {
-    fprintf(stdout, "[T3] Executing action %d\n", (int)action);
+    DriveCommand cmd{0.0f, 0.0f};
+    int duration_ms = 0;
 
     switch (action) {
     case Action::SPIN_360:
-        fprintf(stdout, "[T3] Spinning 360: %d\n", (int)action);
-        // TODO: send spin command to T4, wait for completion
+        fprintf(stdout, "[T3] Executing SPIN_360\n");
+        cmd = {0.0f, 1.0f};
+        duration_ms = cfg_.spin_360_duration_ms;
         break;
     case Action::TURN_180:
-        fprintf(stdout, "[T3] Turning 180: %d\n", (int)action);
-        // TODO: send turn command to T4, wait for completion
+        fprintf(stdout, "[T3] Executing TURN_180\n");
+        cmd = {0.0f, 1.0f};
+        duration_ms = cfg_.turn_180_duration_ms;
         break;
     }
+
+    auto start = std::chrono::steady_clock::now();
+    while (running_) {
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - start).count();
+        if (elapsed >= duration_ms) break;
+        command_queue_.push(cmd);
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+
+    command_queue_.push(DriveCommand{0.0f, 0.0f});
+    fprintf(stdout, "[T3] Action complete\n");
 }

@@ -47,6 +47,7 @@ add_executable(pipeline
     src/camera_capture.cpp
     src/inference_engine.cpp
     src/decision_engine.cpp
+    src/motor_controller.cpp
     src/servo_controller.cpp
 )
 target_link_libraries(pipeline PRIVATE ${OpenCV_LIBS} hailort lgpio Threads::Threads)

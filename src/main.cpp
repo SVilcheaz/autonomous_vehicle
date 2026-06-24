@@ -8,6 +8,7 @@
 #include "camera_capture.hpp"
 #include "inference_engine.hpp"
 #include "decision_engine.hpp"
+#include "motor_controller.hpp"
 #include "perception_result.hpp"
 
 static std::atomic<bool> g_running{true};
@@ -22,6 +23,7 @@ int main() {
 
     SafeQueue<cv::Mat>          frame_queue(cfg.frame_queue_size);
     SafeQueue<PerceptionResult> perception_queue(cfg.perception_queue_size);
+    SafeQueue<DriveCommand>     command_queue(cfg.command_queue_size);
 
     // T1
     CameraCapture camera(cfg.camera_width, cfg.camera_height, frame_queue);
@@ -34,16 +36,25 @@ int main() {
     }
 
     // T3
-    DecisionEngine decision(cfg, perception_queue);
+    DecisionEngine decision(cfg, perception_queue, command_queue);
+
+    // T4
+    MotorController motors(cfg, command_queue);
+    if (!motors.init()) {
+        fprintf(stderr, "[Main] Motor controller init failed\n");
+        return 1;
+    }
 
     camera.start();
     engine.start();
     decision.start();
+    motors.start();
 
     while (g_running) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
+    motors.stop();
     decision.stop();
     engine.stop();
     camera.stop();

@@ -66,10 +66,10 @@ int main() {
                       12, 23, 24);
 
     std::printf("Forward 10%% for 2s...\n");
-    left.setMotorFront(-50); //moves back at +50
-    left.setMotorRear(50); //moves back at -50
-    right.setMotorFront(50); //moves front at +50
-    right.setMotorRear(-50); //moves front at -50
+    left.setMotorFront(-50); //moves back at + values, forward at - values
+    left.setMotorRear(50); //moves back at - values, forward at + values
+    right.setMotorFront(50); //moves forward at + values, back at - values
+    right.setMotorRear(-50); //moves forward at - values, back at + values
     lguSleep(3.0);
 
     std::printf("Tank turn left 20%% for 1s...\n");
