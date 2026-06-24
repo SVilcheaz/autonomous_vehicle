@@ -6,11 +6,6 @@
 #include <chrono>
 #include <cmath>
 
-static int64_t now_ms() {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::steady_clock::now().time_since_epoch()).count();
-}
-
 MotorController::MotorController(const PipelineConfig& cfg,
                                  SafeQueue<DriveCommand>& command_queue)
     : cfg_(cfg), command_queue_(command_queue) {}

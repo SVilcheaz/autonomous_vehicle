@@ -6,7 +6,7 @@
 
 class PIDController {
 public:
-    PIDController(const PipelineConfig& cfg, float kp, float ki, float kd);
+    PIDController(const PipelineConfig& cfg, float kp, float ki = 0.0f, float kd = 0.0f);
     ~PIDController();
 
     DriveCommand compute_follow(const PerceptionResult& result);

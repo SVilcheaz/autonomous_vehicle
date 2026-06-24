@@ -1,4 +1,6 @@
 #pragma once
+#include <chrono>
+#include <cstdint>
 
 enum class DriveMode { IDLE, FOLLOW, AUTOPILOT };
 
@@ -8,3 +10,8 @@ struct DriveCommand {
     float throttle = 0.0f;  // 0..1
     float steering = 0.0f;  // -1..1
 };
+
+inline int64_t now_ms() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+}

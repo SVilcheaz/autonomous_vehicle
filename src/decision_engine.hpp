@@ -13,7 +13,7 @@
 
 class DecisionEngine {
 public:
-    DecisionEngine(const PipelineConfig&        cfg,
+    DecisionEngine(const PipelineConfig&         cfg,
                    SafeQueue<PerceptionResult>&  perception_queue,
                    SafeQueue<DriveCommand>&      command_queue,
                    const std::string&            pipe_path = "/tmp/wake_word_pipe");
@@ -39,6 +39,9 @@ private:
     SafeQueue<Action>      action_queue_{4};
 
     ServoController servo_;
+
+    PIDController pd_steer_controller_;
+    PIDController pi_throttle_controller_;
 
     std::thread pipe_thread_;
     std::thread decision_thread_;

@@ -32,6 +32,11 @@ struct PipelineConfig {
     int    servo_gpio_pin         = 25;     // camera tilt servo
     double angle_follow_me_mode   = 0.0;   // degrees
     double angle_autopilot_mode   = 70.0;    // degrees
+    float  pi_kp                  = 0.0;
+    float  pi_ki                  = 0.0;
+    
+    float  pd_kp                  = 0.0;
+    float  pd_kd                  = 0.0;
 
     // ── Actuation (T4) ───────────────────────────────────────────────────────
     int    gpio_chip              = 4;

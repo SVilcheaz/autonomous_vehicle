@@ -16,7 +16,9 @@ DecisionEngine::DecisionEngine(const PipelineConfig&       cfg,
                                const std::string&           pipe_path)
     : cfg_(cfg), perception_queue_(perception_queue),
       command_queue_(command_queue), pipe_path_(pipe_path),
-      servo_(cfg.servo_gpio_pin) {}
+      servo_(cfg.servo_gpio_pin), 
+      pi_throttle_controller_(cfg, cfg.pi_kp, cfg.pi_ki),
+      pd_steer_controller_(cfg, cfg.pd_kp, 0.0f, cfg.pd_kd) {}
 
 DecisionEngine::~DecisionEngine() { stop(); }
 
