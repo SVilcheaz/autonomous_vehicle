@@ -8,6 +8,7 @@ PIDController::PIDController(const PipelineConfig& cfg, float kp, float ki, floa
 
 PIDController::~PIDController() {}
 
+<<<<<<< HEAD
 DriveCommand PIDController::compute_follow(const PerceptionResult& result){
         for(auto& i : result.detections){
                if(i.label == "person"){
@@ -15,4 +16,13 @@ DriveCommand PIDController::compute_follow(const PerceptionResult& result){
                }
         }
         return {0.0, 0.0};
+=======
+float PIDController::compute_control(const PerceptionResult& result){
+        // for(auto& i : result.detections){
+        //        if(i.label == "person"){
+        //         break;
+        //        }
+        // }
+        return 0.0f;
+>>>>>>> ae5bf17 (add pid controller)
 }

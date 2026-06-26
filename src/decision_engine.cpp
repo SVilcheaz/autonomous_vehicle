@@ -147,16 +147,21 @@ void DecisionEngine::decision_loop() {
                 result.detections.size(), (int)m);
 
         DriveCommand cmd{0.0f, 0.0f};
+        float steer = 0.0f, throttle = 0.0f;
 
         switch (m) {
         case DriveMode::FOLLOW:
             // TODO: compute throttle/steering from person tracking
             // Vector field histogram for navigation on depth map
+            
             break;
         case DriveMode::AUTOPILOT:
             // TODO: compute throttle/steering from occupancy grid
             // PD controller for steering
             // PI controller for throttle
+            steer = pd_steer_controller_.compute_control(result);
+            throttle = pi_throttle_controller_.compute_control(result);
+            cmd = {throttle, steer};
             break;
         default:
             break;
