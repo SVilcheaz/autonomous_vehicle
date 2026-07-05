@@ -18,8 +18,8 @@ DecisionEngine::DecisionEngine(const PipelineConfig&       cfg,
     : cfg_(cfg), perception_queue_(perception_queue),
       command_queue_(command_queue), rc_receiver_(rc_receiver), pipe_path_(pipe_path),
       servo_(cfg.servo_gpio_pin),
-      pi_throttle_controller_(cfg, cfg.pi_kp, cfg.pi_ki),
-      pd_steer_controller_(cfg, cfg.pd_kp, 0.0f, cfg.pd_kd) {}
+      pi_throttle_controller_(cfg, PIDAxis::THROTTLE, cfg.pi_kp, cfg.pi_ki),
+      pd_steer_controller_(cfg, PIDAxis::STEERING, cfg.pd_kp, 0.0f, cfg.pd_kd) {}
 
 DecisionEngine::~DecisionEngine() { stop(); }
 
@@ -176,17 +176,16 @@ void DecisionEngine::decision_loop() {
 
         switch (m) {
         case DriveMode::FOLLOW:
-            // TODO: compute throttle/steering from person tracking
-            // Vector field histogram for navigation on depth map
-            
-            break;
-        case DriveMode::AUTOPILOT:
-            // TODO: compute throttle/steering from occupancy grid
-            // PD controller for steering
-            // PI controller for throttle
+            // Follow the largest tracked person: PD centers them in frame
+            // (steering), PI holds the preset stand-off distance (throttle).
             steer = pd_steer_controller_.compute_control(result);
             throttle = pi_throttle_controller_.compute_control(result);
             cmd = {throttle, steer};
+            break;
+        case DriveMode::AUTOPILOT:
+            // TODO: drive off the depth map alone (no person tracking) —
+            // likely just a PI on throttle to hold distance from whatever
+            // obstacle is ahead; steering approach still to be decided.
             break;
         default:
             break;
