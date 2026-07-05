@@ -2,12 +2,12 @@
 #include <chrono>
 #include <cstdint>
 
-enum class DriveMode { IDLE, FOLLOW, AUTOPILOT };
+enum class DriveMode { IDLE, FOLLOW, AUTOPILOT, MANUAL };
 
 enum class Action { SPIN_360, TURN_180 };
 
 struct DriveCommand {
-    float throttle = 0.0f;  // 0..1
+    float throttle = 0.0f;  // -1..1 (negative = reverse)
     float steering = 0.0f;  // -1..1
 };
 

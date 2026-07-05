@@ -93,7 +93,7 @@ void MotorController::watchdog_loop() {
 }
 
 void MotorController::apply(const DriveCommand& cmd) {
-    float throttle = std::clamp(cmd.throttle, 0.0f, 1.0f) * cfg_.max_throttle;
+    float throttle = std::clamp(cmd.throttle, -1.0f, 1.0f) * cfg_.max_throttle;
     float steering = std::clamp(cmd.steering, -1.0f, 1.0f) * cfg_.max_steering;
 
     float left_speed  = std::clamp(throttle + steering, -1.0f, 1.0f);

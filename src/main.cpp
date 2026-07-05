@@ -10,6 +10,7 @@
 #include "decision_engine.hpp"
 #include "motor_controller.hpp"
 #include "perception_result.hpp"
+#include "rc_receiver.hpp"
 
 static std::atomic<bool> g_running{true};
 
@@ -35,8 +36,15 @@ int main() {
         return 1;
     }
 
+    // RC receiver (MANUAL mode input)
+    RCReceiver rc(cfg);
+    if (!rc.init()) {
+        fprintf(stderr, "[Main] RC receiver init failed\n");
+        return 1;
+    }
+
     // T3
-    DecisionEngine decision(cfg, perception_queue, command_queue);
+    DecisionEngine decision(cfg, perception_queue, command_queue, rc);
 
     // T4
     MotorController motors(cfg, command_queue);
@@ -47,6 +55,7 @@ int main() {
 
     camera.start();
     engine.start();
+    rc.start();
     decision.start();
     motors.start();
 
@@ -56,6 +65,7 @@ int main() {
 
     motors.stop();
     decision.stop();
+    rc.stop();
     engine.stop();
     camera.stop();
 

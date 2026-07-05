@@ -1,10 +1,7 @@
 #include "pid_controller.hpp"
 
 PIDController::PIDController(const PipelineConfig& cfg, float kp, float ki, float kd)
-        : kp_(kp), ki_(ki), kd_(kd)
-        {
-                camera_width_ = cfg.camera_width;
-        }
+        : kp_(kp), ki_(ki), kd_(kd), camera_width_(cfg.camera_width){}
 
 PIDController::~PIDController() {}
 

@@ -38,6 +38,21 @@ struct PipelineConfig {
     float  pd_kp                  = 0.0;
     float  pd_kd                  = 0.0;
 
+    // ── RC Receiver (Manual override) ───────────────────────────────────────
+    std::string rc_serial_port    = "/dev/serial0";
+    int    rc_baud                = 420000;
+    int    rc_ch_steering         = 3;      // CRSF channel index (AETR: Aileron)
+    int    rc_ch_throttle         = 1;      // CRSF channel index (AETR: Throttle)
+    int    rc_ch_mode_switch      = 6;      // CRSF channel index (AUX1)
+    int    rc_switch_threshold    = 1500;   // raw value above => MANUAL active
+    int    rc_channel_min         = 172;
+    int    rc_channel_mid         = 992;
+    int    rc_channel_max         = 1811;
+    float  rc_deadzone            = 0.05f;  // normalised, applied around center
+    bool   rc_invert_steering     = false;
+    bool   rc_invert_throttle     = false;
+    int    rc_signal_timeout_ms   = 150;    // no valid frame within this => failsafe
+
     // ── Actuation (T4) ───────────────────────────────────────────────────────
     int    gpio_chip              = 4;
 

@@ -50,6 +50,11 @@ add_executable(pipeline
     src/pid_controller.cpp
     src/motor_controller.cpp
     src/servo_controller.cpp
+    src/rc_receiver.cpp
 )
 target_link_libraries(pipeline PRIVATE ${OpenCV_LIBS} hailort lgpio Threads::Threads)
 target_include_directories(pipeline PRIVATE ${INCLUDES})
+
+add_executable(rc_receiver_test module_test/rc_receiver_test.cpp src/rc_receiver.cpp)
+target_link_libraries(rc_receiver_test PRIVATE Threads::Threads)
+target_include_directories(rc_receiver_test PRIVATE ${INCLUDES})

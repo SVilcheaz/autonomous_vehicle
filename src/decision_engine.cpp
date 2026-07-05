@@ -13,10 +13,11 @@
 DecisionEngine::DecisionEngine(const PipelineConfig&       cfg,
                                SafeQueue<PerceptionResult>& perception_queue,
                                SafeQueue<DriveCommand>&     command_queue,
+                               RCReceiver&                  rc_receiver,
                                const std::string&           pipe_path)
     : cfg_(cfg), perception_queue_(perception_queue),
-      command_queue_(command_queue), pipe_path_(pipe_path),
-      servo_(cfg.servo_gpio_pin), 
+      command_queue_(command_queue), rc_receiver_(rc_receiver), pipe_path_(pipe_path),
+      servo_(cfg.servo_gpio_pin),
       pi_throttle_controller_(cfg, cfg.pi_kp, cfg.pi_ki),
       pd_steer_controller_(cfg, cfg.pd_kp, 0.0f, cfg.pd_kd) {}
 
@@ -131,7 +132,31 @@ void DecisionEngine::decision_loop() {
             execute_action(action);
         }
 
+        // The RC switch is the sole authority over MANUAL: it forces MANUAL
+        // regardless of the last voice command, and leaving that switch
+        // position drops back to IDLE rather than resuming autopilot/follow.
+        if (rc_receiver_.manual_switch_active()) {
+            mode_.store(DriveMode::MANUAL);
+        } else if (mode_.load() == DriveMode::MANUAL) {
+            mode_.store(DriveMode::IDLE);
+        }
+
         DriveMode m = mode_.load();
+
+        if (m == DriveMode::MANUAL) {
+            // Driven straight off the transmitter — never touches the
+            // perception queue, so it isn't rate-limited by inference.
+            if (rc_receiver_.signal_fresh(cfg_.rc_signal_timeout_ms)) {
+                command_queue_.push(rc_receiver_.get_drive_command());
+            } else {
+                fprintf(stderr, "[T3] RC signal lost, mode MANUAL -> IDLE\n");
+                mode_.store(DriveMode::IDLE);
+                command_queue_.push(DriveCommand{0.0f, 0.0f});
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            continue;
+        }
+
         if (m == DriveMode::IDLE) {
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
             continue;
