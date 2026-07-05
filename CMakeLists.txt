@@ -41,6 +41,10 @@ add_executable(servo_test module_test/servo_test.cpp src/servo_controller.cpp)
 target_link_libraries(servo_test PRIVATE lgpio Threads::Threads)
 target_include_directories(servo_test PRIVATE ${INCLUDES})
 
+add_executable(motor_test module_test/motor_driver.cpp)
+target_link_libraries(motor_test PRIVATE lgpio)
+target_include_directories(motor_test PRIVATE ${INCLUDES})
+
 # Main inference pipeline (T1 → T2 → T3 → T4)
 add_executable(pipeline
     src/main.cpp
