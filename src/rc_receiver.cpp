@@ -150,15 +150,26 @@ float RCReceiver::normalize(int raw, bool invert) const {
     return invert ? -norm : norm;
 }
 
-bool RCReceiver::manual_switch_active() const {
-    std::lock_guard<std::mutex> lock(channels_mtx_);
-    return channels_[cfg_.rc_ch_mode_switch] > cfg_.rc_switch_threshold;
+DriveMode RCReceiver::selected_drive_mode() const {
+    int raw;
+    {
+        std::lock_guard<std::mutex> lock(channels_mtx_);
+        raw = channels_[cfg_.rc_ch_mode_switch];
+    }
+    if (raw > cfg_.rc_switch_threshold_high) return DriveMode::MANUAL;
+    if (raw < cfg_.rc_switch_threshold_low)  return DriveMode::AUTOPILOT;
+    return DriveMode::FOLLOW;
 }
 
 bool RCReceiver::signal_fresh(int timeout_ms) const {
     std::lock_guard<std::mutex> lock(channels_mtx_);
     if (last_frame_ms_ == 0) return false;
     return (now_ms() - last_frame_ms_) < timeout_ms;
+}
+
+bool RCReceiver::activate_switch_reading() const {
+    std::lock_guard<std::mutex> lock(channels_mtx_);
+    return channels_[cfg_.rc_ch_mode_activation] > cfg_.rc_switch_activation_thr;
 }
 
 DriveCommand RCReceiver::get_drive_command() const {

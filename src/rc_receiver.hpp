@@ -24,9 +24,13 @@ public:
     void start();
     void stop();
 
-    bool manual_switch_active() const;
+    // Buckets the mode-switch channel into AUTOPILOT (low) / FOLLOW (mid) /
+    // MANUAL (high) per the configured thresholds. Only meaningful when
+    // signal_fresh() is true — it reads whatever the last received frame said.
+    DriveMode selected_drive_mode() const;
     bool signal_fresh(int timeout_ms) const;
     DriveCommand get_drive_command() const;
+    bool activate_switch_reading() const;
 
 private:
     void read_loop();

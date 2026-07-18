@@ -48,13 +48,18 @@ struct PipelineConfig {
     // value = closer) rather than the assumed larger = farther.
     bool   follow_invert_depth    = false;
 
-    // ── RC Receiver (Manual override) ───────────────────────────────────────
+    // ── RC Receiver (drive mode selector) ────────────────────────────────────
     std::string rc_serial_port    = "/dev/serial0";
     int    rc_baud                = 420000;
     int    rc_ch_steering         = 3;      // CRSF channel index (AETR: Aileron)
     int    rc_ch_throttle         = 1;      // CRSF channel index (AETR: Throttle)
     int    rc_ch_mode_switch      = 6;      // CRSF channel index (AUX1)
-    int    rc_switch_threshold    = 1500;   // raw value above => MANUAL active
+    int    rc_ch_mode_activation  = 9;
+    // 3-position mode switch: raw < low -> AUTOPILOT, low..high -> FOLLOW,
+    // raw > high -> MANUAL.
+    int    rc_switch_threshold_low  = 500;
+    int    rc_switch_threshold_high = 1500;
+    int    rc_switch_activation_thr = 1000;
     int    rc_channel_min         = 172;
     int    rc_channel_mid         = 992;
     int    rc_channel_max         = 1811;

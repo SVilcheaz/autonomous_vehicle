@@ -126,19 +126,42 @@ void DecisionEngine::pipe_reader_loop() {
 }
 
 void DecisionEngine::decision_loop() {
+    DriveMode switch_mode = DriveMode::IDLE;
     while (running_) {
         Action action;
         while (action_queue_.pop(action, 0)) {
             execute_action(action);
         }
 
-        // The RC switch is the sole authority over MANUAL: it forces MANUAL
-        // regardless of the last voice command, and leaving that switch
-        // position drops back to IDLE rather than resuming autopilot/follow.
-        if (rc_receiver_.manual_switch_active()) {
-            mode_.store(DriveMode::MANUAL);
+        // The RC switch, whenever it has a fresh signal, is the sole authority
+        // over AUTOPILOT/FOLLOW/MANUAL — it overrides whatever voice control
+        // last set. Without a live RC link the switch position can't be
+        // trusted, so mode falls back to voice control (this also covers
+        // running with no receiver attached at all, e.g. voice-only testing).
+        if (rc_receiver_.signal_fresh(cfg_.rc_signal_timeout_ms)) {
+            if  (rc_receiver_.activate_switch_reading()) {
+                switch_mode = rc_receiver_.selected_drive_mode();
+            }
+
+            if (switch_mode != DriveMode::MANUAL) {
+                manual_reentry_blocked_ = false;  // switch left MANUAL: re-arm it
+            } else if (manual_reentry_blocked_) {
+                // Was manually driven, the link dropped, and the switch is
+                // still sitting at MANUAL — refuse to resume until it's
+                // physically cycled off that position first.
+                switch_mode = DriveMode::IDLE;
+            }
+
+            if (switch_mode != mode_.load()) {
+                fprintf(stdout, "[T3] RC switch -> mode %d\n", (int)switch_mode);
+                if (switch_mode == DriveMode::FOLLOW)    servo_.setAngle(cfg_.angle_follow_me_mode);
+                if (switch_mode == DriveMode::AUTOPILOT) servo_.setAngle(cfg_.angle_autopilot_mode);
+            }
+            mode_.store(switch_mode);
         } else if (mode_.load() == DriveMode::MANUAL) {
+            fprintf(stderr, "[T3] RC signal lost while in MANUAL, mode -> IDLE\n");
             mode_.store(DriveMode::IDLE);
+            manual_reentry_blocked_ = true;
         }
 
         DriveMode m = mode_.load();
@@ -146,13 +169,7 @@ void DecisionEngine::decision_loop() {
         if (m == DriveMode::MANUAL) {
             // Driven straight off the transmitter — never touches the
             // perception queue, so it isn't rate-limited by inference.
-            if (rc_receiver_.signal_fresh(cfg_.rc_signal_timeout_ms)) {
-                command_queue_.push(rc_receiver_.get_drive_command());
-            } else {
-                fprintf(stderr, "[T3] RC signal lost, mode MANUAL -> IDLE\n");
-                mode_.store(DriveMode::IDLE);
-                command_queue_.push(DriveCommand{0.0f, 0.0f});
-            }
+            command_queue_.push(rc_receiver_.get_drive_command());
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
             continue;
         }
