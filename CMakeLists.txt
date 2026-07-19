@@ -52,6 +52,7 @@ add_executable(pipeline
     src/inference_engine.cpp
     src/decision_engine.cpp
     src/pid_controller.cpp
+    src/vfh_controller.cpp
     src/motor_controller.cpp
     src/servo_controller.cpp
     src/rc_receiver.cpp
@@ -62,3 +63,11 @@ target_include_directories(pipeline PRIVATE ${INCLUDES})
 add_executable(rc_receiver_test module_test/rc_receiver_test.cpp src/rc_receiver.cpp)
 target_link_libraries(rc_receiver_test PRIVATE Threads::Threads)
 target_include_directories(rc_receiver_test PRIVATE ${INCLUDES})
+
+add_executable(vfh_test module_test/vfh_controller_test.cpp src/vfh_controller.cpp)
+target_link_libraries(vfh_test PRIVATE ${OpenCV_LIBS})
+target_include_directories(vfh_test PRIVATE ${INCLUDES})
+
+add_executable(follow_test module_test/follow_controller_test.cpp src/pid_controller.cpp)
+target_link_libraries(follow_test PRIVATE ${OpenCV_LIBS} Threads::Threads)
+target_include_directories(follow_test PRIVATE ${INCLUDES})
