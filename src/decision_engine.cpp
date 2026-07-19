@@ -19,7 +19,8 @@ DecisionEngine::DecisionEngine(const PipelineConfig&       cfg,
       command_queue_(command_queue), rc_receiver_(rc_receiver), pipe_path_(pipe_path),
       servo_(cfg.servo_gpio_pin),
       pi_throttle_controller_(cfg, PIDAxis::THROTTLE, cfg.pi_kp, cfg.pi_ki),
-      pd_steer_controller_(cfg, PIDAxis::STEERING, cfg.pd_kp, 0.0f, cfg.pd_kd) {}
+      pd_steer_controller_(cfg, PIDAxis::STEERING, cfg.pd_kp, 0.0f, cfg.pd_kd),
+      vfh_controller_(cfg) {}
 
 DecisionEngine::~DecisionEngine() { stop(); }
 
@@ -200,9 +201,11 @@ void DecisionEngine::decision_loop() {
             cmd = {throttle, steer};
             break;
         case DriveMode::AUTOPILOT:
-            // TODO: drive off the depth map alone (no person tracking) —
-            // likely just a PI on throttle to hold distance from whatever
-            // obstacle is ahead; steering approach still to be decided.
+            // Drives off the depth map alone (no person tracking): VFH+
+            // picks a steering direction from the polar obstacle histogram,
+            // biased toward straight-ahead; throttle is proportional to
+            // that direction's own clearance, eased off in turns.
+            cmd = vfh_controller_.compute_control(result);
             break;
         default:
             break;

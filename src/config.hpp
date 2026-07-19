@@ -29,7 +29,7 @@ struct PipelineConfig {
     // ── Decision (T3) ────────────────────────────────────────────────────────
     float  obstacle_dist_m        = 1.0f;   // repulsion kicks in below this depth
     size_t command_queue_size     = 2;      // ring buffer slots between T3 and T4
-    int    servo_gpio_pin         = 25;     // camera tilt servo
+    int    servo_gpio_pin         = 25;     // camera tilt servo pin
     double angle_follow_me_mode   = 0.0;   // degrees
     double angle_autopilot_mode   = 70.0;    // degrees
     float  pi_kp                  = 0.0;   // throttle: distance-hold gain
@@ -45,8 +45,26 @@ struct PipelineConfig {
     // this to match.
     float  follow_target_depth    = 0.5f;
     // Flip if the depth model turns out to report inverse depth (larger
-    // value = closer) rather than the assumed larger = farther.
+    // value = closer) rather than the assumed larger = farther. This is a
+    // property of the depth model, not of FOLLOW specifically — VFH+
+    // (AUTOPILOT, below) reuses this same flag.
     bool   follow_invert_depth    = false;
+
+    // ── VFH+ (AUTOPILOT) ─────────────────────────────────────────────────────
+    // Hysteresis exit threshold: a sector must clear this — farther away
+    // than obstacle_dist_m, same raw units/polarity — to leave the blocked
+    // state. Bench-calibrate the same way as obstacle_dist_m/follow_target_depth.
+    float  vfh_obstacle_clear_dist_m = 1.3f;
+    int    vfh_num_sectors           = 24;    // depth_map columns divided into this many angular sectors
+    float  vfh_row_top_frac          = 0.35f; // ignore rows above this fraction of image height (sky)
+    float  vfh_row_bottom_frac       = 0.95f; // ignore rows below this fraction (ground/hood immediately ahead)
+    int    vfh_smax_sectors          = 4;     // valleys narrower than this: steer through center; wider: steer to border + smax/2 margin
+    float  vfh_max_steer_rate        = 0.15f; // max |steering| change per decision tick (slew limit)
+    // Bench-calibrate: raw depth value considered "clear" — farther than
+    // obstacle_dist_m, same raw units/polarity. Throttle ramps to full
+    // between obstacle_dist_m and this value.
+    float  vfh_full_speed_dist_m     = 3.0f;
+    float  vfh_turn_slowdown         = 0.5f;  // fraction of throttle shed at full steering lock
 
     // ── RC Receiver (drive mode selector) ────────────────────────────────────
     std::string rc_serial_port    = "/dev/serial0";

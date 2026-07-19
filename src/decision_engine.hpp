@@ -10,6 +10,7 @@
 #include "perception_result.hpp"
 #include "servo_controller.hpp"
 #include "pid_controller.hpp"
+#include "vfh_controller.hpp"
 #include "rc_receiver.hpp"
 
 class DecisionEngine {
@@ -50,6 +51,7 @@ private:
 
     PIDController pd_steer_controller_;
     PIDController pi_throttle_controller_;
+    VFHController vfh_controller_;
 
     std::thread pipe_thread_;
     std::thread decision_thread_;
