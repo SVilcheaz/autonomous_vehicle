@@ -32,10 +32,13 @@ struct PipelineConfig {
     int    servo_gpio_pin         = 25;     // camera tilt servo pin
     double angle_follow_me_mode   = 0.0;   // degrees
     double angle_autopilot_mode   = 70.0;    // degrees
-    float  pi_kp                  = 0.0;   // throttle: distance-hold gain
-    float  pi_ki                  = 0.0;
+    // Starting points from module_test/follow_gain_tuner.cpp's closed-loop
+    // sweep (simplified plant, no motor lag/inertia modeled) — confirm on
+    // the real robot and retune from here, don't treat as final.
+    float  pi_kp                  = 3.0;   // throttle: distance-hold gain
+    float  pi_ki                  = 0.3;
 
-    float  pd_kp                  = 0.0;   // steering: person-centering gain
+    float  pd_kp                  = 1.5;   // steering: person-centering gain
     float  pd_kd                  = 0.0;
 
     // Target distance to the tracked person in FOLLOW mode, in the same

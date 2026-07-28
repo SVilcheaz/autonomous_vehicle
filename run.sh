@@ -18,12 +18,13 @@ echo "5) RC receiver test"
 echo "6) Motor test"
 echo "7) VFH+ controller test (AUTOPILOT)"
 echo "8) Follow controller test (FOLLOW)"
+echo "9) Follow PD/PI gain tuner (FOLLOW, ~1 min)"
 
 echo -e ""
 
 echo "Pipelines"
-echo "9) Camera capture and inference"
-echo "10) Full Pipeline"
+echo "10) Camera capture and inference"
+echo "11) Full Pipeline"
 
 read -p "Select: " choice
 
@@ -44,8 +45,10 @@ elif [ "$choice" = "7" ]; then
 elif [ "$choice" = "8" ]; then
     ./build/follow_test
 elif [ "$choice" = "9" ]; then
-    ./build/pipeline_visual_test
+    ./build/gain_tuner
 elif [ "$choice" = "10" ]; then
+    ./build/pipeline_visual_test
+elif [ "$choice" = "11" ]; then
     "$SCRIPT_DIR/venv/bin/python" "$SCRIPT_DIR/oww.py" &
     OWW_PID=$!
     trap "kill $OWW_PID 2>/dev/null; wait $OWW_PID 2>/dev/null" EXIT
