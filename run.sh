@@ -3,6 +3,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
 
 cmake -S . -B build
 cmake --build build -- -j$(nproc)
@@ -25,6 +26,8 @@ echo -e ""
 echo "Pipelines"
 echo "10) Camera capture and inference"
 echo "11) Full Pipeline"
+echo "12) Pipeline recorder test (no robot hardware)"
+echo "13) Person presence event test (no robot hardware)"
 
 read -p "Select: " choice
 
@@ -49,10 +52,25 @@ elif [ "$choice" = "9" ]; then
 elif [ "$choice" = "10" ]; then
     ./build/pipeline_visual_test
 elif [ "$choice" = "11" ]; then
-    "$SCRIPT_DIR/venv/bin/python" "$SCRIPT_DIR/oww.py" &
+    read -r -p "Record annotated video and logs? [y/N] " record_choice
+    PIPELINE_ARGS=()
+    if [[ "$record_choice" =~ ^[Yy]([Ee][Ss])?$ ]]; then
+        SESSION_DIR="$SCRIPT_DIR/results/full_pipeline/$(date +%Y%m%d_%H%M%S)_$$"
+        mkdir -p "$SESSION_DIR"
+        PIPELINE_ARGS=(--record --record-dir "$SESSION_DIR")
+        echo "Recording to $SESSION_DIR"
+        "$SCRIPT_DIR/venv/bin/python" -u "$SCRIPT_DIR/oww.py" \
+            > "$SESSION_DIR/wake_word.log" 2>&1 &
+    else
+        "$SCRIPT_DIR/venv/bin/python" "$SCRIPT_DIR/oww.py" &
+    fi
     OWW_PID=$!
     trap "kill $OWW_PID 2>/dev/null; wait $OWW_PID 2>/dev/null" EXIT
-    ./build/pipeline
+    ./build/pipeline "${PIPELINE_ARGS[@]}"
+elif [ "$choice" = "12" ]; then
+    ./build/recorder_test
+elif [ "$choice" = "13" ]; then
+    ./build/person_event_test
 else
     echo "Invalid option"
 fi

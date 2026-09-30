@@ -3,6 +3,7 @@
 #include <atomic>
 #include <thread>
 #include <cstdint>
+#include <mutex>
 
 #include "types.hpp"
 #include "config.hpp"
@@ -26,7 +27,7 @@ private:
 
     void control_loop();
     void watchdog_loop();
-    void apply(const DriveCommand& cmd);
+    bool apply(const DriveCommand& cmd, bool resuming);
     void set_motor(const Motor& m, float speed);
     void all_stop();
 
@@ -35,6 +36,14 @@ private:
 
     std::atomic<bool>    running_{false};
     std::atomic<int64_t> last_cmd_epoch_ms_{0};
+    std::mutex           gpio_mutex_;
+    bool                 output_active_{false};  // guarded by gpio_mutex_
+
+    // Only the control thread updates these log-throttling fields.
+    DriveCommand last_logged_command_{};
+    int64_t      last_log_ms_{0};
+    bool         has_logged_command_{false};
+    bool         last_logged_motion_{false};
 
     int gpio_handle_{-1};
 

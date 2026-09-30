@@ -15,11 +15,14 @@
 #include "safe_queue.hpp"
 #include "perception_result.hpp"
 
+class PipelineRecorder;
+
 class InferenceEngine {
 public:
     InferenceEngine(const PipelineConfig&        cfg,
                     SafeQueue<cv::Mat>&           frame_queue,
-                    SafeQueue<PerceptionResult>&  perception_queue);
+                    SafeQueue<PerceptionResult>&  perception_queue,
+                    PipelineRecorder*             recorder = nullptr);
     ~InferenceEngine();
 
     bool init();   // load both models onto Hailo; call once before start()
@@ -40,6 +43,7 @@ private:
     const PipelineConfig&        cfg_;
     SafeQueue<cv::Mat>&          frame_queue_;
     SafeQueue<PerceptionResult>& perception_queue_;
+    PipelineRecorder*            recorder_;
     std::atomic<bool>            running_{false};
     std::thread                  thread_;
 

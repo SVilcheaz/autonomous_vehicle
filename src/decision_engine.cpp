@@ -10,6 +10,18 @@
 #include <poll.h>
 #include <sys/stat.h>
 
+namespace {
+const char* mode_name(DriveMode mode) {
+    switch (mode) {
+    case DriveMode::IDLE: return "IDLE";
+    case DriveMode::FOLLOW: return "FOLLOW";
+    case DriveMode::AUTOPILOT: return "AUTOPILOT";
+    case DriveMode::MANUAL: return "MANUAL";
+    }
+    return "UNKNOWN";
+}
+}
+
 DecisionEngine::DecisionEngine(const PipelineConfig&       cfg,
                                SafeQueue<PerceptionResult>& perception_queue,
                                SafeQueue<DriveCommand>&     command_queue,
@@ -128,6 +140,7 @@ void DecisionEngine::pipe_reader_loop() {
 
 void DecisionEngine::decision_loop() {
     DriveMode switch_mode = DriveMode::IDLE;
+    fprintf(stdout, "[T3] Decision engine started in IDLE\n");
     while (running_) {
         Action action;
         while (action_queue_.pop(action, 0)) {
@@ -154,7 +167,7 @@ void DecisionEngine::decision_loop() {
             }
 
             if (switch_mode != mode_.load()) {
-                fprintf(stdout, "[T3] RC switch -> mode %d\n", (int)switch_mode);
+                fprintf(stdout, "[T3] RC switch -> mode %s\n", mode_name(switch_mode));
                 if (switch_mode == DriveMode::FOLLOW)    servo_.setAngle(cfg_.angle_follow_me_mode);
                 if (switch_mode == DriveMode::AUTOPILOT) servo_.setAngle(cfg_.angle_autopilot_mode);
             }
@@ -168,15 +181,19 @@ void DecisionEngine::decision_loop() {
         DriveMode m = mode_.load();
 
         if (m == DriveMode::MANUAL) {
-            // Driven straight off the transmitter — never touches the
-            // perception queue, so it isn't rate-limited by inference.
+            // Keep observing detection events, without waiting for inference
+            // or changing the transmitter's command cadence.
+            PerceptionResult observation;
+            if (perception_queue_.pop(observation, 0)) log_person_event(observation, m);
             command_queue_.push(rc_receiver_.get_drive_command());
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
             continue;
         }
 
         if (m == DriveMode::IDLE) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            PerceptionResult observation;
+            if (perception_queue_.pop(observation, 0)) log_person_event(observation, m);
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
             continue;
         }
 
@@ -186,8 +203,7 @@ void DecisionEngine::decision_loop() {
             continue;
         }
 
-        fprintf(stdout, "[T3] Frame (%zu detections), mode=%d\n",
-                result.detections.size(), (int)m);
+        log_person_event(result, m);
 
         DriveCommand cmd{0.0f, 0.0f};
         float steer = 0.0f, throttle = 0.0f;
@@ -218,6 +234,20 @@ void DecisionEngine::decision_loop() {
     fprintf(stdout, "[T3] Decision engine stopped\n");
 }
 
+void DecisionEngine::log_person_event(const PerceptionResult& result, DriveMode mode) {
+    PersonEvent event = person_tracker_.update(result);
+    if (event.kind == PersonEvent::Kind::DETECTED) {
+        const auto& person = event.target;
+        fprintf(stdout,
+                "[T3] Person detected in %s: %d person(s), score=%.2f, center=(%d,%d), depth=%.3f raw\n",
+                mode_name(mode), event.count, person.score,
+                (person.x1 + person.x2) / 2, (person.y1 + person.y2) / 2,
+                person.depth);
+    } else if (event.kind == PersonEvent::Kind::LOST) {
+        fprintf(stdout, "[T3] Person no longer detected in %s\n", mode_name(mode));
+    }
+}
+
 void DecisionEngine::execute_action(Action action) {
     DriveCommand cmd{0.0f, 0.0f};
     int duration_ms = 0;
@@ -237,6 +267,10 @@ void DecisionEngine::execute_action(Action action) {
 
     auto start = std::chrono::steady_clock::now();
     while (running_) {
+        PerceptionResult observation;
+        if (perception_queue_.pop(observation, 0)) {
+            log_person_event(observation, mode_.load());
+        }
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - start).count();
         if (elapsed >= duration_ms) break;

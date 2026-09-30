@@ -1,4 +1,5 @@
 #include "inference_engine.hpp"
+#include "pipeline_recorder.hpp"
 #include <algorithm>
 #include <cstdio>
 
@@ -19,8 +20,10 @@ static const std::vector<std::string> COCO_CLASSES = {
 
 InferenceEngine::InferenceEngine(const PipelineConfig&       cfg,
                                  SafeQueue<cv::Mat>&          frame_queue,
-                                 SafeQueue<PerceptionResult>& perception_queue)
-    : cfg_(cfg), frame_queue_(frame_queue), perception_queue_(perception_queue) {}
+                                 SafeQueue<PerceptionResult>& perception_queue,
+                                 PipelineRecorder*            recorder)
+    : cfg_(cfg), frame_queue_(frame_queue), perception_queue_(perception_queue),
+      recorder_(recorder) {}
 
 InferenceEngine::~InferenceEngine() { stop(); }
 
@@ -208,7 +211,15 @@ void InferenceEngine::inference_loop() {
         result.frame_w    = frame.cols;
         result.frame_h    = frame.rows;
 
-        perception_queue_.push(std::move(result));
+        if (recorder_) {
+            // Keep the decision path moving while the recorder retains its
+            // own reference-counted frame/depth buffers and detection copy.
+            PerceptionResult recorded_result = result;
+            perception_queue_.push(std::move(result));
+            if (!recorder_->enqueue(std::move(recorded_result))) break;
+        } else {
+            perception_queue_.push(std::move(result));
+        }
     }
 
     fprintf(stdout, "[T2] Inference engine stopped\n");

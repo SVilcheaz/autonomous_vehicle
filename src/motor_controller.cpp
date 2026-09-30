@@ -65,11 +65,16 @@ void MotorController::control_loop() {
         DriveCommand cmd;
         if (!command_queue_.pop(cmd, 100)) continue;
 
+        std::lock_guard<std::mutex> lock(gpio_mutex_);
         last_cmd_epoch_ms_.store(now_ms());
-        apply(cmd);
+        output_active_ = apply(cmd, !output_active_);
     }
 
-    all_stop();
+    {
+        std::lock_guard<std::mutex> lock(gpio_mutex_);
+        all_stop();
+        output_active_ = false;
+    }
     fprintf(stdout, "[T4] Motor controller stopped\n");
 }
 
@@ -80,32 +85,48 @@ void MotorController::watchdog_loop() {
         std::this_thread::sleep_for(
             std::chrono::milliseconds(cfg_.watchdog_timeout_ms / 2));
 
+        std::lock_guard<std::mutex> lock(gpio_mutex_);
         int64_t elapsed = now_ms() - last_cmd_epoch_ms_.load();
-        if (elapsed > cfg_.watchdog_timeout_ms) {
+        if (elapsed > cfg_.watchdog_timeout_ms && output_active_) {
+            all_stop();
+            output_active_ = false;
             fprintf(stderr, "[T4] Watchdog: no command for %lld ms, emergency stop\n",
                     (long long)elapsed);
-            all_stop();
-            last_cmd_epoch_ms_.store(now_ms());
         }
     }
 
     fprintf(stdout, "[T4] Watchdog stopped\n");
 }
 
-void MotorController::apply(const DriveCommand& cmd) {
+bool MotorController::apply(const DriveCommand& cmd, bool resuming) {
     float throttle = std::clamp(cmd.throttle, -1.0f, 1.0f) * cfg_.max_throttle;
     float steering = std::clamp(cmd.steering, -1.0f, 1.0f) * cfg_.max_steering;
 
     float left_speed  = std::clamp(throttle + steering, -1.0f, 1.0f);
     float right_speed = std::clamp(throttle - steering, -1.0f, 1.0f);
 
-    fprintf(stdout, "[T4] throttle=%.2f steer=%.2f -> L=%.2f R=%.2f\n",
-            cmd.throttle, cmd.steering, left_speed, right_speed);
-
     set_motor(left_front_,  left_speed);
     set_motor(left_rear_,   left_speed);
     set_motor(right_front_, right_speed);
     set_motor(right_rear_,  right_speed);
+
+    const bool moving = std::abs(left_speed) >= 0.01f ||
+                        std::abs(right_speed) >= 0.01f;
+    const int64_t now = now_ms();
+    const bool state_changed = has_logged_command_ && moving != last_logged_motion_;
+    const bool significant_change =
+        std::abs(cmd.throttle - last_logged_command_.throttle) >= 0.1f ||
+        std::abs(cmd.steering - last_logged_command_.steering) >= 0.1f;
+    if ((moving && resuming) || state_changed ||
+        (significant_change && now - last_log_ms_ >= 1000)) {
+        fprintf(stdout, "[T4] throttle=%.2f steer=%.2f -> L=%.2f R=%.2f\n",
+                cmd.throttle, cmd.steering, left_speed, right_speed);
+        last_logged_command_ = cmd;
+        last_logged_motion_ = moving;
+        last_log_ms_ = now;
+        has_logged_command_ = true;
+    }
+    return moving;
 }
 
 void MotorController::set_motor(const Motor& m, float speed) {

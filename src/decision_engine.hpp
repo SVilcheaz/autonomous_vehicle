@@ -12,6 +12,7 @@
 #include "pid_controller.hpp"
 #include "vfh_controller.hpp"
 #include "rc_receiver.hpp"
+#include "person_presence_tracker.hpp"
 
 class DecisionEngine {
 public:
@@ -31,6 +32,7 @@ private:
     void pipe_reader_loop();
     void decision_loop();
     void execute_action(Action action);
+    void log_person_event(const PerceptionResult& result, DriveMode mode);
 
     const PipelineConfig&        cfg_;
     SafeQueue<PerceptionResult>& perception_queue_;
@@ -46,6 +48,7 @@ private:
     // the RC link drops while in MANUAL, blocks the switch from re-engaging
     // MANUAL until it's physically moved off that position first.
     bool manual_reentry_blocked_{false};
+    PersonPresenceTracker person_tracker_;
 
     ServoController servo_;
 
