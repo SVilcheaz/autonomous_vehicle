@@ -35,10 +35,10 @@ struct PipelineConfig {
     // Starting points from module_test/follow_gain_tuner.cpp's closed-loop
     // sweep (simplified plant, no motor lag/inertia modeled) — confirm on
     // the real robot and retune from here, don't treat as final.
-    float  pi_kp                  = 3.0;   // throttle: distance-hold gain
-    float  pi_ki                  = 0.3;
+    float  pi_kp                  = 0.6;   // throttle: distance-hold gain
+    float  pi_ki                  = 0.0;
 
-    float  pd_kp                  = 1.5;   // steering: person-centering gain
+    float  pd_kp                  = 0.6;   // steering: person-centering gain
     float  pd_kd                  = 0.0;
 
     // Target distance to the tracked person in FOLLOW mode, in the same
@@ -46,12 +46,12 @@ struct PipelineConfig {
     // perception_result.hpp) and obstacle_dist_m above — read the printed
     // depth at the desired stand-off distance during bench testing and set
     // this to match.
-    float  follow_target_depth    = 0.5f;
+    float  follow_target_depth    = 2.0f;
     // Flip if the depth model turns out to report inverse depth (larger
     // value = closer) rather than the assumed larger = farther. This is a
     // property of the depth model, not of FOLLOW specifically — VFH+
     // (AUTOPILOT, below) reuses this same flag.
-    bool   follow_invert_depth    = false;
+    bool   follow_invert_depth    = true;
 
     // ── VFH+ (AUTOPILOT) ─────────────────────────────────────────────────────
     // Hysteresis exit threshold: a sector must clear this — farther away

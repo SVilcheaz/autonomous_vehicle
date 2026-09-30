@@ -236,6 +236,18 @@ void DecisionEngine::decision_loop() {
 
 void DecisionEngine::log_person_event(const PerceptionResult& result, DriveMode mode) {
     PersonEvent event = person_tracker_.update(result);
+    if (event.count > 0) {
+        const auto& person = event.target;
+        fprintf(stdout,
+                "[T3] Person frame in %s: count=%d, target_score=%.2f, "
+                "target_center=(%d,%d), target_box=(%d,%d,%d,%d), target_depth=%.4f raw\n",
+                mode_name(mode), event.count, person.score,
+                (person.x1 + person.x2) / 2, (person.y1 + person.y2) / 2,
+                person.x1, person.y1, person.x2, person.y2, person.depth);
+    } else {
+        fprintf(stdout, "[T3] Person frame in %s: count=0\n", mode_name(mode));
+    }
+
     if (event.kind == PersonEvent::Kind::DETECTED) {
         const auto& person = event.target;
         fprintf(stdout,

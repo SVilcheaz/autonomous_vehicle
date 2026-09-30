@@ -77,6 +77,11 @@ int main(int argc, char** argv) {
         }
         if (!logger.start(record_directory / "pipeline.log")) return 1;
         fprintf(stdout, "[Main] Recording session: %s\n", record_directory.c_str());
+        fprintf(stdout,
+                "[Main] FOLLOW controller: pd_kp=%.4f pd_kd=%.4f pi_kp=%.4f pi_ki=%.4f "
+                "follow_target_depth=%.4f raw follow_invert_depth=%s\n",
+                cfg.pd_kp, cfg.pd_kd, cfg.pi_kp, cfg.pi_ki,
+                cfg.follow_target_depth, cfg.follow_invert_depth ? "true" : "false");
         recorder = std::make_unique<PipelineRecorder>(
             record_directory, cfg.camera_width, cfg.camera_height);
         if (!recorder->start()) return 1;
