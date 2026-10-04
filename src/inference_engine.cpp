@@ -102,7 +102,6 @@ bool InferenceEngine::init() {
     yolo_out_buf_.assign(yolo_out_bytes  / sizeof(float), 0.f);
     depth_out_buf_.assign(depth_out_bytes / sizeof(float), 0.f);
 
-    // ── Create bindings and bind output buffers once ──────────────────────────
     // Input buffers are re-bound per frame (new pointer each iteration).
     // Output buffers persist and are read after each run().
     auto yb = yolo_configured_->create_bindings();
@@ -129,7 +128,7 @@ bool InferenceEngine::init() {
     return true;
 }
 
-// ── thread control ────────────────────────────────────────────────────────────
+// ── thread control
 
 void InferenceEngine::start() {
     running_ = true;
@@ -141,7 +140,7 @@ void InferenceEngine::stop() {
     if (thread_.joinable()) thread_.join();
 }
 
-// ── hot loop ──────────────────────────────────────────────────────────────────
+// ── hot loop
 
 void InferenceEngine::inference_loop() {
     const auto timeout = std::chrono::milliseconds(cfg_.infer_timeout_ms);

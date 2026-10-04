@@ -20,9 +20,6 @@ void CameraCapture::stop() {
 }
 
 void CameraCapture::capture_loop() {
-    // NV12 from libcamerasrc, convert to BGR for OpenCV consumers downstream.
-    // drop=true and sync=false: appsink discards frames it can't deliver fast enough,
-    // and does not wait for the pipeline clock — we do our own frame management.
     const std::string pipeline =
         "libcamerasrc ! "
         "video/x-raw,width=" + std::to_string(width_) +
@@ -48,8 +45,6 @@ void CameraCapture::capture_loop() {
             continue;
         }
         cv::rotate(frame, frame, cv::ROTATE_180);
-        // push() drops the oldest frame internally if the queue is full,
-        // so T2 always sees the freshest image.
         frame_queue_.push(std::move(frame));
     }
 

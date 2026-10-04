@@ -8,18 +8,12 @@
 
 enum class PIDAxis { STEERING, THROTTLE };
 
-// Drives one axis of FOLLOW's person-tracking behavior: STEERING keeps
-// the tracked person horizontally centered in frame, THROTTLE holds a preset
-// stand-off distance to them via Detection::depth.
 class PIDController {
 public:
     PIDController(const PipelineConfig& cfg, PIDAxis axis,
                    float kp, float ki = 0.0f, float kd = 0.0f);
     ~PIDController();
 
-    // Returns a control output in -1..1. Returns 0 (and resets internal
-    // state) when no person is in frame, so a reacquired target doesn't
-    // inherit a stale integral/derivative.
     float compute_control(const PerceptionResult& result);
 
 private:

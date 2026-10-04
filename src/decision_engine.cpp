@@ -134,22 +134,15 @@ void DecisionEngine::decision_loop() {
             execute_action(action);
         }
 
-        // The RC switch, whenever it has a fresh signal, is the sole authority
-        // over AUTOPILOT/FOLLOW/MANUAL — it overrides whatever voice control
-        // last set. Without a live RC link the switch position can't be
-        // trusted, so mode falls back to voice control (this also covers
-        // running with no receiver attached at all, e.g. voice-only testing).
         if (rc_receiver_.signal_fresh(cfg_.rc_signal_timeout_ms)) {
             if  (rc_receiver_.activate_switch_reading()) {
                 switch_mode = rc_receiver_.selected_drive_mode();
             }
 
             if (switch_mode != DriveMode::MANUAL) {
-                manual_reentry_blocked_ = false;  // switch left MANUAL: re-arm it
+                manual_reentry_blocked_ = false;  // switch left MANUAL, re-arm it
             } else if (manual_reentry_blocked_) {
-                // Was manually driven, the link dropped, and the switch is
-                // still sitting at MANUAL — refuse to resume until it's
-                // physically cycled off that position first.
+                // Was manually driven and linked drop -> put in idle
                 switch_mode = DriveMode::IDLE;
             }
 
@@ -168,8 +161,7 @@ void DecisionEngine::decision_loop() {
         DriveMode m = mode_.load();
 
         if (m == DriveMode::MANUAL) {
-            // Driven straight off the transmitter — never touches the
-            // perception queue, so it isn't rate-limited by inference.
+            // manual ignores perception pipeline
             command_queue_.push(rc_receiver_.get_drive_command());
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
             continue;
@@ -194,17 +186,11 @@ void DecisionEngine::decision_loop() {
 
         switch (m) {
         case DriveMode::FOLLOW:
-            // Follow the largest tracked person: PD centers them in frame
-            // (steering), PI holds the preset stand-off distance (throttle).
             steer = pd_steer_controller_.compute_control(result);
             throttle = pi_throttle_controller_.compute_control(result);
             cmd = {throttle, steer};
             break;
         case DriveMode::AUTOPILOT:
-            // Drives off the depth map alone (no person tracking): VFH+
-            // picks a steering direction from the polar obstacle histogram,
-            // biased toward straight-ahead; throttle is proportional to
-            // that direction's own clearance, eased off in turns.
             cmd = vfh_controller_.compute_control(result);
             break;
         default:

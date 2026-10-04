@@ -42,9 +42,6 @@ private:
     std::atomic<DriveMode> mode_{DriveMode::IDLE};
     SafeQueue<Action>      action_queue_{4};
 
-    // decision_loop()-only state (single-threaded, no atomics needed): once
-    // the RC link drops while in MANUAL, blocks the switch from re-engaging
-    // MANUAL until it's physically moved off that position first.
     bool manual_reentry_blocked_{false};
 
     ServoController servo_;

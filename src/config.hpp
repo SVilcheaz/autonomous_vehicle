@@ -6,15 +6,15 @@
 enum class DepthModel { FASTDEPTH, DEPTH_ANYTHING };
 
 struct PipelineConfig {
-    // ── Camera (T1) ───────────────────────────────────────────────────────────
+    // Camera (T1)
     int    camera_width           = 1280;
     int    camera_height          = 720;
     size_t frame_queue_size       = 2;      // ring buffer slots between T1 and T2
 
-    // ── Inference (T2) ────────────────────────────────────────────────────────
+    // Inference (T2)
     std::string yolo_hef          = "models/hailo/yolov8s_h8l.hef";
     DepthModel  depth_model       = DepthModel::DEPTH_ANYTHING;
-    int         yolo_input_size   = 640;    // YOLO letterbox target (pixels)
+    int         yolo_input_size   = 640;    // YOLO letterbox target in pixels
     float       conf_threshold    = 0.4f;
     float       nms_iou_threshold = 0.45f;
     int         infer_timeout_ms  = 1000;
@@ -26,50 +26,34 @@ struct PipelineConfig {
             : "models/hailo/depth_anything_v2--224x224.hef";
     }
 
-    // ── Decision (T3) ────────────────────────────────────────────────────────
+    // Decision (T3)
     float  obstacle_dist_m        = 1.0f;   // repulsion kicks in below this depth
     size_t command_queue_size     = 2;      // ring buffer slots between T3 and T4
     int    servo_gpio_pin         = 25;     // camera tilt servo pin
     double angle_follow_me_mode   = 0.0;   // degrees
     double angle_autopilot_mode   = 70.0;    // degrees
-    // Starting points from module_test/follow_gain_tuner.cpp's closed-loop
-    // sweep (simplified plant, no motor lag/inertia modeled) — confirm on
-    // the real robot and retune from here, don't treat as final.
     float  pi_kp                  = 3.0;   // throttle: distance-hold gain
     float  pi_ki                  = 0.3;
 
     float  pd_kp                  = 1.5;   // steering: person-centering gain
     float  pd_kd                  = 0.0;
 
-    // Target distance to the tracked person in FOLLOW mode, in the same
-    // raw/uncalibrated depth-model units as Detection::depth (see
-    // perception_result.hpp) and obstacle_dist_m above — read the printed
-    // depth at the desired stand-off distance during bench testing and set
-    // this to match.
+    // target distance to the tracked person in FOLLOW mode
     float  follow_target_depth    = 0.5f;
-    // Flip if the depth model turns out to report inverse depth (larger
-    // value = closer) rather than the assumed larger = farther. This is a
-    // property of the depth model, not of FOLLOW specifically — VFH+
-    // (AUTOPILOT, below) reuses this same flag.
+    // invert for fast depth and dont invert for DA
     bool   follow_invert_depth    = false;
 
-    // ── VFH+ (AUTOPILOT) ─────────────────────────────────────────────────────
-    // Hysteresis exit threshold: a sector must clear this — farther away
-    // than obstacle_dist_m, same raw units/polarity — to leave the blocked
-    // state. Bench-calibrate the same way as obstacle_dist_m/follow_target_depth.
+    //VFH for autopilot
     float  vfh_obstacle_clear_dist_m = 1.3f;
-    int    vfh_num_sectors           = 24;    // depth_map columns divided into this many angular sectors
-    float  vfh_row_top_frac          = 0.35f; // ignore rows above this fraction of image height (sky)
-    float  vfh_row_bottom_frac       = 0.95f; // ignore rows below this fraction (ground/hood immediately ahead)
+    int    vfh_num_sectors           = 24;    // depth_map sectors
+    float  vfh_row_top_frac          = 0.35f; // ignore rows above this fraction of image height
+    float  vfh_row_bottom_frac       = 0.95f; // ignore rows below this fraction
     int    vfh_smax_sectors          = 4;     // valleys narrower than this: steer through center; wider: steer to border + smax/2 margin
     float  vfh_max_steer_rate        = 0.15f; // max |steering| change per decision tick (slew limit)
-    // Bench-calibrate: raw depth value considered "clear" — farther than
-    // obstacle_dist_m, same raw units/polarity. Throttle ramps to full
-    // between obstacle_dist_m and this value.
     float  vfh_full_speed_dist_m     = 3.0f;
     float  vfh_turn_slowdown         = 0.5f;  // fraction of throttle shed at full steering lock
 
-    // ── RC Receiver (drive mode selector) ────────────────────────────────────
+    // RC Receiver (drive mode selector)
     std::string rc_serial_port    = "/dev/serial0";
     int    rc_baud                = 420000;
     int    rc_ch_steering         = 3;      // CRSF channel index (AETR: Aileron)
