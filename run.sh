@@ -38,7 +38,17 @@ elif [ "$choice" = "2" ]; then
 elif [ "$choice" = "3" ]; then
     ./build/object_detector
 elif [ "$choice" = "4" ]; then
-    ./build/servo_test
+    echo "Final servo position:"
+    echo "1) Follow me"
+    echo "2) Autopilot (default)"
+    while true; do
+        read -r -p "Select final position [2]: " servo_mode
+        case "$servo_mode" in
+            1) ./build/servo_test follow-me; break ;;
+            2|"") ./build/servo_test autopilot; break ;;
+            *) echo "Invalid option. Choose 1 or 2." ;;
+        esac
+    done
 elif [ "$choice" = "5" ]; then
     ./build/rc_receiver_test
 elif [ "$choice" = "6" ]; then

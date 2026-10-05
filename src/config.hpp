@@ -31,11 +31,11 @@ struct PipelineConfig {
     size_t command_queue_size     = 2;      // ring buffer slots between T3 and T4
     int    servo_gpio_pin         = 25;     // camera tilt servo pin
     double angle_follow_me_mode   = 0.0;   // degrees
-    double angle_autopilot_mode   = 70.0;    // degrees
+    double angle_autopilot_mode   = 30.0;    // degrees
     // Starting points from module_test/follow_gain_tuner.cpp's closed-loop
     // sweep (simplified plant, no motor lag/inertia modeled) — confirm on
     // the real robot and retune from here, don't treat as final.
-    float  pi_kp                  = 0.6;   // throttle: distance-hold gain
+    float  pi_kp                  = 0.8;   // throttle: distance-hold gain
     float  pi_ki                  = 0.0;
 
     float  pd_kp                  = 0.6;   // steering: person-centering gain
