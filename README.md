@@ -4,6 +4,30 @@ Colab for training wake word ONNX models
 
 https://colab.research.google.com/drive/1q1oe2zOyZp7UsB3jJiQ1IFn8z5YfjwEb#scrollTo=qgaKWIY6WlJ1
 
+## FOLLOW search and reacquisition
+
+With FOLLOW selected, the car follows the largest detected person. On the
+first inference result without a person, it switches to AUTOPILOT obstacle
+avoidance to search, including the autopilot camera angle. When any person
+is detected, it restores the follow camera angle and resumes following on
+that result. It may acquire a different person; there is no identity tracking.
+It also searches if FOLLOW is selected with nobody initially visible.
+
+The RC switch can stay on FOLLOW throughout. Selecting another mode cancels
+this automatic search; explicitly selecting AUTOPILOT does not automatically
+start following people. Motors are commanded to stop while the camera changes
+angle. Missing inference results still trigger the existing stop timeout,
+and searching without a depth map produces a stop command.
+
+Build and run `follow_search_test` to check search, reacquisition, controller
+reset, and depth-map handling without robot hardware:
+
+```sh
+cmake -S . -B build
+cmake --build build --target follow_search_test
+./build/follow_search_test
+```
+
 ## Full pipeline recording
 
 Run `./run.sh`, choose `11) Full Pipeline`, and answer `y` to the recording

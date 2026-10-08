@@ -9,7 +9,7 @@
 #include "safe_queue.hpp"
 #include "perception_result.hpp"
 #include "servo_controller.hpp"
-#include "pid_controller.hpp"
+#include "follow_controller.hpp"
 #include "vfh_controller.hpp"
 #include "rc_receiver.hpp"
 #include "person_presence_tracker.hpp"
@@ -33,6 +33,7 @@ private:
     void decision_loop();
     void execute_action(Action action);
     void log_person_event(const PerceptionResult& result, DriveMode mode);
+    void set_camera_mode(DriveMode mode);
 
     const PipelineConfig&        cfg_;
     SafeQueue<PerceptionResult>& perception_queue_;
@@ -49,12 +50,12 @@ private:
     // MANUAL until it's physically moved off that position first.
     bool manual_reentry_blocked_{false};
     PersonPresenceTracker person_tracker_;
+    DriveMode camera_mode_{DriveMode::IDLE};
 
     ServoController servo_;
 
-    PIDController pd_steer_controller_;
-    PIDController pi_throttle_controller_;
     VFHController vfh_controller_;
+    FollowController follow_controller_;
 
     std::thread pipe_thread_;
     std::thread decision_thread_;

@@ -30,9 +30,7 @@ DecisionEngine::DecisionEngine(const PipelineConfig&       cfg,
     : cfg_(cfg), perception_queue_(perception_queue),
       command_queue_(command_queue), rc_receiver_(rc_receiver), pipe_path_(pipe_path),
       servo_(cfg.servo_gpio_pin),
-      pi_throttle_controller_(cfg, PIDAxis::THROTTLE, cfg.pi_kp, cfg.pi_ki),
-      pd_steer_controller_(cfg, PIDAxis::STEERING, cfg.pd_kp, 0.0f, cfg.pd_kd),
-      vfh_controller_(cfg) {}
+      vfh_controller_(cfg), follow_controller_(cfg, vfh_controller_) {}
 
 DecisionEngine::~DecisionEngine() { stop(); }
 
@@ -101,13 +99,11 @@ void DecisionEngine::pipe_reader_loop() {
 
             if (keyword == "follow_me") {
                 mode_.store(DriveMode::FOLLOW);
-                servo_.setAngle(cfg_.angle_follow_me_mode);
                 fprintf(stdout, "[T3] Wake word: '%s' -> mode FOLLOW\n", keyword.c_str());
             } 
             
             else if (keyword == "autopilot") {
                 mode_.store(DriveMode::AUTOPILOT);
-                servo_.setAngle(cfg_.angle_autopilot_mode);
                 fprintf(stdout, "[T3] Wake word: '%s' -> mode AUTOPILOT\n", keyword.c_str());
             } 
 
@@ -168,8 +164,6 @@ void DecisionEngine::decision_loop() {
 
             if (switch_mode != mode_.load()) {
                 fprintf(stdout, "[T3] RC switch -> mode %s\n", mode_name(switch_mode));
-                if (switch_mode == DriveMode::FOLLOW)    servo_.setAngle(cfg_.angle_follow_me_mode);
-                if (switch_mode == DriveMode::AUTOPILOT) servo_.setAngle(cfg_.angle_autopilot_mode);
             }
             mode_.store(switch_mode);
         } else if (mode_.load() == DriveMode::MANUAL) {
@@ -179,6 +173,9 @@ void DecisionEngine::decision_loop() {
         }
 
         DriveMode m = mode_.load();
+        if (m != DriveMode::FOLLOW) follow_controller_.reset();
+        set_camera_mode(m == DriveMode::FOLLOW && follow_controller_.searching()
+                        ? DriveMode::AUTOPILOT : m);
 
         if (m == DriveMode::MANUAL) {
             // Keep observing detection events, without waiting for inference
@@ -206,16 +203,21 @@ void DecisionEngine::decision_loop() {
         log_person_event(result, m);
 
         DriveCommand cmd{0.0f, 0.0f};
-        float steer = 0.0f, throttle = 0.0f;
-
         switch (m) {
-        case DriveMode::FOLLOW:
-            // Follow the largest tracked person: PD centers them in frame
-            // (steering), PI holds the preset stand-off distance (throttle).
-            steer = pd_steer_controller_.compute_control(result);
-            throttle = pi_throttle_controller_.compute_control(result);
-            cmd = {throttle, steer};
+        case DriveMode::FOLLOW: {
+            const bool was_searching = follow_controller_.searching();
+            cmd = follow_controller_.compute_control(result);
+            if (was_searching != follow_controller_.searching()) {
+                if (follow_controller_.searching()) {
+                    fprintf(stdout, "[T3] FOLLOW: no person detected -> AUTOPILOT search\n");
+                    set_camera_mode(DriveMode::AUTOPILOT);
+                } else {
+                    fprintf(stdout, "[T3] FOLLOW: person detected -> resume following\n");
+                    set_camera_mode(DriveMode::FOLLOW);
+                }
+            }
             break;
+        }
         case DriveMode::AUTOPILOT:
             // Drives off the depth map alone (no person tracking): VFH+
             // picks a steering direction from the polar obstacle histogram,
@@ -227,11 +229,25 @@ void DecisionEngine::decision_loop() {
             break;
         }
 
+        // A voice mode change or shutdown may arrive while the camera settles.
+        // Do not resume motion using a command from the previous mode.
+        if (!running_ || mode_.load() != m) cmd = {0.0f, 0.0f};
         command_queue_.push(cmd);
     }
 
     command_queue_.push(DriveCommand{0.0f, 0.0f});
     fprintf(stdout, "[T3] Decision engine stopped\n");
+}
+
+void DecisionEngine::set_camera_mode(DriveMode mode) {
+    if (mode != DriveMode::FOLLOW && mode != DriveMode::AUTOPILOT) return;
+    if (mode == camera_mode_) return;
+    // Only the decision thread moves the camera, including search transitions.
+    // A repeated voice command cannot restore the FOLLOW angle during search.
+    command_queue_.push(DriveCommand{0.0f, 0.0f});
+    servo_.setAngle(mode == DriveMode::FOLLOW ? cfg_.angle_follow_me_mode
+                                            : cfg_.angle_autopilot_mode);
+    camera_mode_ = mode;
 }
 
 void DecisionEngine::log_person_event(const PerceptionResult& result, DriveMode mode) {

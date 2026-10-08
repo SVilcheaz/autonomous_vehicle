@@ -90,3 +90,11 @@ target_include_directories(follow_test PRIVATE ${INCLUDES})
 add_executable(gain_tuner module_test/follow_gain_tuner.cpp src/pid_controller.cpp)
 target_link_libraries(gain_tuner PRIVATE ${OpenCV_LIBS} Threads::Threads)
 target_include_directories(gain_tuner PRIVATE ${INCLUDES})
+
+add_executable(follow_search_test
+    module_test/follow_search_test.cpp
+    src/pid_controller.cpp
+    src/vfh_controller.cpp
+)
+target_link_libraries(follow_search_test PRIVATE ${OpenCV_LIBS} Threads::Threads)
+target_include_directories(follow_search_test PRIVATE ${INCLUDES})
